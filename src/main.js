@@ -1,3 +1,4 @@
+import { findPath } from './navigation.js';
 import '@fontsource/dm-sans/latin-400.css';
 import '@fontsource/dm-sans/latin-500.css';
 import '@fontsource/dm-sans/latin-600.css';
@@ -113,16 +114,36 @@ const routes=[[[ -6.8,4.1],[-3.3,4.1],[-3.3,3],[-6.8,3]],[[5.7,9.4],[10.8,9.4],[
 routes.forEach((path,i)=>{const p=person(...path[0],['#638f91','#dfc18d','#7d8199','#a1ad7b','#d9a18c','#8fa7b3'][i]);p.path=path;p.target=1});
 person(-5,-4.8,'#f8f5e6',false,3.98);person(2.7,-4.3,'#f8f5e6',false,3.98);person(-.2,-2.25,'#a0b6b4',false,3.98);
 // Render and input. Screen-relative motion is projected onto the ground plane.
+let route=[];
 const keys=new Set();let zoom=1, sunset=false, elapsed=0, distance=0, lastZone='';
 function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h);const aspect=w/h;const extent=innerWidth<600?27.5:15;camera.left=-extent*aspect;camera.right=extent*aspect;camera.top=extent;camera.bottom=-extent;camera.zoom=zoom;camera.updateProjectionMatrix();const target=innerWidth<600?new THREE.Vector3(-.5,1.2,-.5):new THREE.Vector3(-4.7,1.5,.9);camera.position.copy(target).add(new THREE.Vector3(22,25,31));camera.lookAt(target)}window.addEventListener('resize',resize);resize();
 function setZoom(v){zoom=THREE.MathUtils.clamp(v,.65,1.9);camera.zoom=zoom;camera.updateProjectionMatrix()}
 canvas.addEventListener('wheel',e=>{e.preventDefault();setZoom(zoom-e.deltaY*.001)},{passive:false});document.querySelector('#zoom-in').onclick=()=>setZoom(zoom+.12);document.querySelector('#zoom-out').onclick=()=>setZoom(zoom-.12);
 const valid=['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','w','a','s','d','Shift'];
-window.addEventListener('keydown',e=>{if(valid.includes(e.key)&&!document.querySelector('dialog').open){e.preventDefault();keys.add(e.key)}});window.addEventListener('keyup',e=>keys.delete(e.key));window.addEventListener('blur',()=>keys.clear());document.addEventListener('visibilitychange',()=>keys.clear());
-for(const b of document.querySelectorAll('[data-key]')){b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);keys.add(b.dataset.key)});for(const ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,()=>keys.delete(b.dataset.key))}
+window.addEventListener('keydown',e=>{if(valid.includes(e.key)&&!document.querySelector('dialog').open){e.preventDefault();if(e.key!=='Shift'){route=[];destination.visible=false;}keys.add(e.key)}});window.addEventListener('keyup',e=>keys.delete(e.key));window.addEventListener('blur',()=>keys.clear());document.addEventListener('visibilitychange',()=>keys.clear());
+for(const b of document.querySelectorAll('[data-key]')){b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);route=[];destination.visible=false;keys.add(b.dataset.key)});for(const ev of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(ev,()=>keys.delete(b.dataset.key))}
 function blocked(x,z){return Math.abs(x)>11.6||Math.abs(z)>9.8||obstacles.some(o=>Math.abs(x-o.x)<o.w&&Math.abs(z-o.z)<o.d)}
+const destination = new THREE.Mesh(new THREE.RingGeometry(.23,.29,40),new THREE.MeshBasicMaterial({color:'#bd765c',side:THREE.DoubleSide,transparent:true,opacity:.85}));
+destination.rotation.x=-Math.PI/2;destination.visible=false;scene.add(destination);
+const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2(),walkingPlane=new THREE.Plane(new THREE.Vector3(0,1,0),-.31);
+let pointerStart=null;
+canvas.addEventListener('pointerdown',e=>{if(e.button===0)pointerStart={x:e.clientX,y:e.clientY}});
+canvas.addEventListener('pointercancel',()=>pointerStart=null);
+canvas.addEventListener('pointermove',()=>{canvas.style.cursor='crosshair'});
+canvas.addEventListener('pointerup',e=>{
+  if(!pointerStart||Math.hypot(e.clientX-pointerStart.x,e.clientY-pointerStart.y)>8){pointerStart=null;return;}
+  pointerStart=null;if(dialog.open)return;
+  const rect=canvas.getBoundingClientRect();pointer.set((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1);
+  raycaster.setFromCamera(pointer,camera);
+  const target=new THREE.Vector3();if(!raycaster.ray.intersectPlane(walkingPlane,target))return;
+  const hit=raycaster.intersectObjects(scene.children,true).find(h=>h.object!==destination);
+  if(blocked(target.x,target.z)||(hit&&hit.point.y>.7)){toast('Scegli un punto libero sul vialetto.');return;}
+  const path=findPath(player.g.position,{x:target.x,z:target.z},blocked);
+  if(!path){toast('Quel punto non è raggiungibile. Prova un altro vialetto.');return;}
+  route=path;destination.position.set(target.x,.32,target.z);destination.visible=true;
+});
 let toastTimer;function toast(text){const el=document.querySelector('#toast');el.textContent=text;el.classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('visible'),4500)}
-document.querySelector('#reset').onclick=()=>{player.g.position.set(-4,.31,4.3);keys.clear();toast('Eccoti di nuovo davanti alla clinica.')};
+document.querySelector('#reset').onclick=()=>{player.g.position.set(-4,.31,4.3);route=[];destination.visible=false;keys.clear();toast('Eccoti di nuovo davanti alla clinica.')};
 const dialog=document.querySelector('dialog');document.querySelector('#help').onclick=()=>{keys.clear();dialog.showModal()};document.querySelector('#close-help').onclick=document.querySelector('#explore').onclick=()=>dialog.close();
 document.querySelector('#light').onclick=()=>{sunset=!sunset;sun.color.set(sunset?'#ffc391':'#fff0d7');sun.intensity=sunset?3.2:4.2;sun.position.set(sunset?-25:-14,sunset?12:25,10);hemi.color.set(sunset?'#e6c8b9':'#fff5de');scene.background.set(sunset?'#e9dfd2':'#e8eee8');ground.material=material(sunset?'#e9dfd2':'#e8eee8');document.querySelector('#time').textContent=sunset?'18:42':'10:24';document.querySelector('.scene-info small').textContent=sunset?'La luce si fa gentile':'Una mattina di primavera';toast(sunset?'L’ora dorata. Ancora due passi?':'Il quartiere si risveglia.')};
 // Subtle optional ambient audio, generated locally without audio downloads.
@@ -131,12 +152,20 @@ const right=new THREE.Vector3(), forward=new THREE.Vector3();const clock=new THR
 function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05);elapsed+=dt;
 let dx=(keys.has('ArrowRight')||keys.has('d')?1:0)-(keys.has('ArrowLeft')||keys.has('a')?1:0),dy=(keys.has('ArrowUp')||keys.has('w')?1:0)-(keys.has('ArrowDown')||keys.has('s')?1:0);
 right.setFromMatrixColumn(camera.matrixWorld,0);right.y=0;right.normalize();forward.crossVectors(new THREE.Vector3(0,1,0),right).normalize();
-const direction=right.clone().multiplyScalar(dx).addScaledVector(forward,dy);const moving=direction.lengthSq()>0;if(moving){direction.normalize();const speed=keys.has('Shift')?3.8:2.1;const nx=player.g.position.x+direction.x*speed*dt,nz=player.g.position.z+direction.z*speed*dt;if(!blocked(nx,player.g.position.z))player.g.position.x=nx;if(!blocked(player.g.position.x,nz))player.g.position.z=nz;player.g.rotation.y=Math.atan2(direction.x,direction.z);distance+=speed*dt;document.querySelector('#activity').textContent=(keys.has('Shift')?'Una corsetta':'A spasso')+' · '+Math.floor(distance)+' m';}
+const direction=right.clone().multiplyScalar(dx).addScaledVector(forward,dy);
+let remaining=Infinity;
+if(!direction.lengthSq()&&route.length){
+  let next=route[0];remaining=Math.hypot(next.x-player.g.position.x,next.z-player.g.position.z);
+  if(remaining<.045){route.shift();next=route[0];}
+  if(next){direction.set(next.x-player.g.position.x,0,next.z-player.g.position.z);remaining=direction.length();}
+}
+if(!route.length)destination.visible=false;
+const moving=direction.lengthSq()>0;if(moving){direction.normalize();const speed=keys.has('Shift')?3.8:2.1;const stride=Math.min(speed*dt,remaining);const nx=player.g.position.x+direction.x*stride,nz=player.g.position.z+direction.z*stride;if(!blocked(nx,player.g.position.z))player.g.position.x=nx;if(!blocked(player.g.position.x,nz))player.g.position.z=nz;player.g.rotation.y=Math.atan2(direction.x,direction.z);distance+=stride;document.querySelector('#activity').textContent=(keys.has('Shift')?'Una corsetta':'A spasso')+' · '+Math.floor(distance)+' m';}
 player.moving=moving;player.g.userData.marker.position.y=1.85+Math.sin(elapsed*2)*.07;
 for(const p of people){if(p.path.length){const t=p.path[p.target];const x=t[0]-p.g.position.x,z=t[1]-p.g.position.z,len=Math.hypot(x,z);if(len<.12)p.target=(p.target+1)%p.path.length;else{p.g.position.x+=x/len*p.speed*dt;p.g.position.z+=z/len*p.speed*dt;p.g.rotation.y=Math.atan2(x,z)}p.moving=true}const walk=p.moving?Math.sin(elapsed*(p.controlled&&keys.has('Shift')?13:8)+p.phase)*.5:Math.sin(elapsed*1.5+p.phase)*.025;p.limbs.forEach((limb,i)=>limb.rotation.x=walk*(i===0||i===3?1:-1));p.body.position.y=p.moving?Math.abs(Math.sin(elapsed*8+p.phase))*.025:Math.sin(elapsed*1.6+p.phase)*.009;}
 const x=player.g.position.x,z=player.g.position.z;const zone=z<4.2&&x>-2.6&&x<1.5?'clinic':x>6&&z<4?'garden':z>8.5?'walk':'';if(zone&&zone!==lastZone){toast({clinic:'Clinica Borgo · Un posto dove prendersi cura.',garden:'Il giardino dei piccoli incontri. Fermati un momento.',walk:'La passeggiata · La città ha il tuo passo.'}[zone]);lastZone=zone}
-renderer.render(scene,camera);if(!ready){ready=true;document.querySelector('#loading').style.opacity='0';setTimeout(()=>document.querySelector('#loading').remove(),800);setTimeout(()=>toast('Sei il vicino in corallo. Muoviti con le frecce.'),1000);window.__BORGO_READY__=true;}
+renderer.render(scene,camera);if(!ready){ready=true;document.querySelector('#loading').style.opacity='0';setTimeout(()=>document.querySelector('#loading').remove(),800);setTimeout(()=>toast('Sei il vicino in corallo. Clicca sul vialetto per camminare.'),1000);window.__BORGO_READY__=true;}
 }
 // Small read-only diagnostics for smoke tests and accessibility integrations.
-window.borgo={get player(){return{x:player.g.position.x,z:player.g.position.z}},get inhabitants(){return people.length},get obstacles(){return obstacles.length},get ready(){return ready}};
+window.borgo={projectGround(x,z){const p=new THREE.Vector3(x,.31,z).project(camera);return{x:(p.x+1)*innerWidth/2,y:(1-p.y)*innerHeight/2}},get destination(){return route.length?{...route[route.length-1]}:null},get player(){return{x:player.g.position.x,z:player.g.position.z}},get inhabitants(){return people.length},get obstacles(){return obstacles.length},get ready(){return ready}};
 animate();

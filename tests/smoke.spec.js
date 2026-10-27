@@ -25,3 +25,16 @@ test('3D world, movement, collisions and controls', async ({page})=>{
   expect(errors).toEqual([]);
 });
 test('mobile touch movement',async({page})=>{await page.setViewportSize({width:390,height:844});await page.goto('http://127.0.0.1:5173');await page.waitForFunction(()=>window.borgo?.ready);const before=await page.evaluate(()=>borgo.player);const b=page.locator('[data-key="ArrowRight"]');await b.dispatchEvent('pointerdown',{pointerId:1});await page.waitForTimeout(600);await b.dispatchEvent('pointerup',{pointerId:1});const after=await page.evaluate(()=>borgo.player);expect(after.x).not.toBe(before.x);await page.screenshot({path:'/tmp/borgo-mobile.png'});});
+test('mouse click reaches a destination and keyboard cancels the route',async({page})=>{
+ test.setTimeout(60000);
+ await page.goto('http://127.0.0.1:5173');await page.waitForFunction(()=>window.borgo?.ready);
+ const point=await page.evaluate(()=>borgo.projectGround(-6,9.2));
+ await page.mouse.click(point.x,point.y);
+ await expect.poll(()=>page.evaluate(()=>borgo.destination),{timeout:5000}).not.toBeNull();
+ await expect.poll(()=>page.evaluate(()=>Math.hypot(borgo.player.x+6,borgo.player.z-9.2)),{timeout:45000}).toBeLessThan(.1);
+ await expect.poll(()=>page.evaluate(()=>borgo.destination)).toBeNull();
+ await page.locator('#reset').click();
+ await page.mouse.click(point.x,point.y);
+ await page.keyboard.press('ArrowLeft');
+ expect(await page.evaluate(()=>borgo.destination)).toBeNull();
+});

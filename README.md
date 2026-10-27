@@ -11,7 +11,7 @@ npm ci
 npm run dev
 ```
 
-Frecce o WASD per camminare, Shift per correre. Il vicino con la giacca corallo è il personaggio controllato. Su telefono sono disponibili pulsanti touch. Rotella o +/− per lo zoom; pulsante per alternare giorno e tramonto. Il movimento è relativo allo schermo, con collisioni su edifici e arredi.
+Clic sul terreno per raggiungere un punto aggirando gli ostacoli; un nuovo clic cambia destinazione. Frecce o WASD per camminare manualmente e interrompere il percorso, Shift per correre. Il vicino con la giacca corallo è il personaggio controllato. Su telefono sono disponibili pulsanti touch. Rotella o +/− per lo zoom; pulsante per alternare giorno e tramonto. Il movimento è relativo allo schermo, con collisioni su edifici e arredi.
 
 ```sh
 npm run build
@@ -25,7 +25,7 @@ npx playwright install chromium
 npm test
 ```
 
-Per usare Chromium già installato: `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium npm test`. I test verificano scena, movimento, collisioni, reset, cambio luce, aiuto e controlli touch.
+Per usare Chromium già installato: `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium npm test`. I test verificano scena, movimento, collisioni, reset, cambio luce, aiuto, controlli touch e arrivo alla destinazione con il mouse. I test del percorso verificano deviazioni intorno agli ostacoli e destinazioni irraggiungibili. Il server di sviluppo viene avviato automaticamente dai test browser.
 
 ## Pubblicazione su GitHub Pages
 
