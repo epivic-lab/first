@@ -1,0 +1,23 @@
+import { test, expect } from '@playwright/test';
+test('3D world, movement, collisions and controls', async ({page})=>{
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto('http://127.0.0.1:5173');
+  await page.waitForFunction(()=>window.borgo?.ready);
+  await expect(page.locator('#loading')).toHaveCount(0);
+  expect(await page.evaluate(()=>borgo.inhabitants)).toBe(10);
+  const before=await page.evaluate(()=>borgo.player);
+  await page.keyboard.down('ArrowRight');await page.waitForTimeout(900);await page.keyboard.up('ArrowRight');
+  const after=await page.evaluate(()=>borgo.player);
+  expect(Math.hypot(after.x-before.x,after.z-before.z)).toBeGreaterThan(.3);
+  await page.locator('#reset').click();
+  expect(await page.evaluate(()=>borgo.player.x)).toBe(-4);
+  await page.keyboard.down('ArrowUp');await page.waitForTimeout(3000);await page.keyboard.up('ArrowUp');
+  expect(await page.evaluate(()=>borgo.player.z)).toBeGreaterThan(2.2);
+  await page.locator('#reset').click();
+  await page.locator('#light').click();await expect(page.locator('#time')).toHaveText('18:42');
+  await page.locator('#light').click();
+  await page.locator('#help').click();await expect(page.locator('dialog')).toBeVisible();await page.locator('#explore').click();
+  await page.screenshot({path:'/tmp/borgo-desktop.png'});
+  expect(errors).toEqual([]);
+});
+test('mobile touch movement',async({page})=>{await page.setViewportSize({width:390,height:844});await page.goto('http://127.0.0.1:5173');await page.waitForFunction(()=>window.borgo?.ready);const before=await page.evaluate(()=>borgo.player);const b=page.locator('[data-key="ArrowRight"]');await b.dispatchEvent('pointerdown',{pointerId:1});await page.waitForTimeout(600);await b.dispatchEvent('pointerup',{pointerId:1});const after=await page.evaluate(()=>borgo.player);expect(after.x).not.toBe(before.x);await page.screenshot({path:'/tmp/borgo-mobile.png'});});
