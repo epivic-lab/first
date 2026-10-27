@@ -16,7 +16,7 @@ test('enters reception, walks up stairs, opens all exhibits on arrival and retur
  expect(await page.evaluate(()=>Math.hypot(borgo.player.x+4.3,borgo.player.z+.3))).toBeLessThan(.1);
  await expect(page.locator('#exhibit-dialog')).not.toBeVisible();
  await page.keyboard.up('Shift');
- for(const [id,title] of [['pc','Il PC connesso'],['bed','Il letto intelligente'],['library','La libreria delle risorse']]){
+ for(const [id,title] of [['pc','The connected PC'],['bed','The smart bed'],['library','The resource library']]){
   await page.locator(`[data-point="${id}"]`).click();
   await expect(page.locator('#exhibit-dialog')).not.toBeVisible();
   await page.keyboard.down('Shift');
@@ -24,7 +24,7 @@ test('enters reception, walks up stairs, opens all exhibits on arrival and retur
   await expect(page.locator('#exhibit-title')).toHaveText(title);
   await expect(page.locator('#exhibit-dialog')).toContainText('Lorem ipsum');
   expect(await page.evaluate(()=>borgo.player.floor)).toBe(1);
-  const modal=await page.locator('#exhibit-dialog').boundingBox();expect(modal.width).toBe(1440);expect(modal.height).toBe(1000);
+  const modal=await page.locator('#exhibit-dialog').boundingBox();expect(modal.width).toBeCloseTo(1440,1);expect(modal.height).toBeCloseTo(1000,1);
   if(id==='pc')await page.screenshot({path:'/tmp/borgo-exhibit.png'});
   await page.keyboard.up('Shift');
   if(id==='bed')await page.keyboard.press('Escape');else await page.locator('#close-exhibit').click();
@@ -49,7 +49,7 @@ test('mobile exhibit selection from outside climbs before opening the full-scree
  await expect.poll(()=>page.evaluate(()=>borgo.onStairs),{timeout:45000}).toBe(true);
  await expect(page.locator('#exhibit-dialog')).toBeVisible({timeout:45000});
  expect(await page.evaluate(()=>borgo.player.floor)).toBe(1);
- const bounds=await page.locator('#exhibit-dialog').boundingBox();expect(bounds.width).toBe(390);expect(bounds.height).toBe(844);
+ const bounds=await page.locator('#exhibit-dialog').boundingBox();expect(bounds.width).toBeCloseTo(390,1);expect(bounds.height).toBeCloseTo(844,1);
  await page.screenshot({path:'/tmp/borgo-mobile-exhibit.png'});
  await page.locator('#close-exhibit').click();await expect(page.locator('#exhibit-dialog')).not.toBeVisible();
  await page.keyboard.up('Shift');

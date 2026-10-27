@@ -62,7 +62,7 @@ box(.58,.4,.07,'#527b7e',-3.6,1.85,-2.8,groundInterior);
 box(2.35,.4,.55,'#92a99b',-5.7,.83,.2,groundInterior);
 box(2.35,.6,.16,'#92a99b',-5.7,1.07,-.04,groundInterior);
 box(2.25,.06,.65,'#c5cfb7',-.65,.57,1.35,groundInterior);
-const welcome=label('BENVENUTO A BORGO',3,'#6d8170');welcome.position.set(-2.5,2.6,-5.99);groundInterior.add(welcome);
+const welcome=label('WELCOME TO BORGO',3,'#6d8170');welcome.position.set(-2.5,2.6,-5.99);groundInterior.add(welcome);
 const floorLabel=label('RECEPTION  /  00',2.4,'#9b8868');floorLabel.rotation.x=-Math.PI/2;floorLabel.position.set(-.7,.56,-.1);groundInterior.add(floorLabel);
 // Quiet floor joints, reception details and a planted corner.
 for(let x=-7;x<4;x+=.7)box(.012,.008,7.45,'#d5d1bd',x,.546,-2.1,groundInterior);
@@ -103,7 +103,7 @@ collect(startUpper,upperMeshes);startFacade=scene.children.length;
 box(2.05,5.35,.56,palette.purple,-3.05,3.05,2.08);
 box(2.18,.13,.7,'#ac98af',-3.05,5.78,2.08);
 box(.32,1.1,.09,palette.white,-3.05,4.6,2.42);box(1.05,.32,.09,palette.white,-3.05,4.6,2.42);
-const hospitalName=label('CLINICA BORGO',1.8,'#fff9ec');hospitalName.position.set(-3.05,3.64,2.424);scene.add(hospitalName);
+const hospitalName=label('BORGO CLINIC',1.8,'#fff9ec');hospitalName.position.set(-3.05,3.64,2.424);scene.add(hospitalName);
 const entryLeft=box(1.1,2.25,.06,'#779ca3',-1.23,1.58,2.02);
 const entryRight=box(1.1,2.25,.06,'#779ca3',-.07,1.58,2.02);
 entryLeft.userData.door=true;entryRight.userData.door=true;
@@ -200,11 +200,11 @@ function toast(text){const el=document.querySelector('#toast');el.textContent=te
 function travel(goal,targetFloor,exhibit=null){
  if(paused())return;
  const path=onStairs?makeStairJourney(player.g.position,targetFloor,goal,obstacles):makeJourney(player.g.position,floor,goal,targetFloor,obstacles);
- if(!path){toast('Quel punto non è raggiungibile. Scegli un punto libero.');return;}
+ if(!path){toast('That spot is not reachable. Choose a clear spot.');return;}
  keys.clear();route=path;pendingExhibit=exhibit;
  destination.position.set(goal.x,targetFloor===1?3.98:(insideBuilding(goal.x,goal.z)?.56:.32),goal.z);destination.visible=true;
- if(targetFloor!==floor)toast(targetFloor===1?'Verso il primo piano, passando dalla scala interna.':'Scendiamo alla reception.');
- else if(exhibit)toast('Ti accompagno a scoprire: '+exhibit.title.toLowerCase()+'.');
+ if(targetFloor!==floor)toast(targetFloor===1?'Heading to the first floor via the indoor stairs.':'Heading downstairs to reception.');
+ else if(exhibit)toast('Let’s discover: '+exhibit.title.toLowerCase()+'.');
 }
 const markerElements=[];
 function marker({id,title,number,anchor,onClick,type='exhibit'}){
@@ -232,14 +232,14 @@ canvas.addEventListener('pointerup',e=>{
  // Pick the visible walkable surface, not the plane of the player's current
  // floor. A pavement click from upstairs therefore means "walk outside".
  const surface=hits.find(h=>h.object.userData.walkFloor!==undefined&&h.face?.normal.y>.5);
- if(!surface){toast('Scegli un punto libero sul pavimento o sul vialetto.');return;}
+ if(!surface){toast('Choose a clear spot on the floor or path.');return;}
  const targetFloor=surface.object.userData.walkFloor;
  const interior=surface.object.parent===groundInterior;
  const height=targetFloor===1?3.96:interior?.56:.31;
  const target=new THREE.Vector3();
  if(!raycaster.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0),-height),target))return;
  const isBlocked=targetFloor===1?blockedUpper(target.x,target.z):blockedGround(target.x,target.z,obstacles);
- if(isBlocked){toast('Quel punto è occupato. Scegli un tratto libero del pavimento.');return;}
+ if(isBlocked){toast('That spot is occupied. Choose a clear part of the floor.');return;}
  travel({x:target.x,z:target.z},targetFloor);
 });
 function openExhibit(item){
@@ -249,7 +249,7 @@ function openExhibit(item){
  document.querySelector('#exhibit-title').textContent=item.title;
  document.querySelector('#exhibit-subtitle').textContent=item.subtitle;
  document.querySelector('#exhibit-dialog').dataset.kind=item.icon;
- document.querySelector('#exhibit-progress').textContent=`${discovered.size} di 3 tecnologie esplorate`;
+ document.querySelector('#exhibit-progress').textContent=`${discovered.size} of 3 technologies explored`;
  document.querySelector('#discovery-count').textContent=`${discovered.size} / 3`;
  document.querySelector(`[data-point="${item.id}"]`).classList.add('discovered');
  document.querySelector('#exhibit-art').innerHTML=exhibitArtwork(item.icon);
@@ -265,13 +265,13 @@ function exhibitArtwork(kind){
 }
 document.querySelector('#close-exhibit').onclick=document.querySelector('#return-explore').onclick=()=>exhibitDialog.close();
 exhibitDialog.addEventListener('close',()=>{keys.clear();document.querySelector('[data-point="'+(exhibits.find(e=>e.title===document.querySelector('#exhibit-title').textContent)?.id||'pc')+'"]').focus({preventScroll:true});});
-document.querySelector('#reset').onclick=()=>{player.g.position.set(-4,.31,4.3);floor=0;onStairs=false;cancelRoute();keys.clear();toast('Eccoti di nuovo davanti alla clinica.')};
+document.querySelector('#reset').onclick=()=>{player.g.position.set(-4,.31,4.3);floor=0;onStairs=false;cancelRoute();keys.clear();toast('Back at the clinic entrance.')};
 document.querySelector('#help').onclick=()=>{keys.clear();helpDialog.showModal()};document.querySelector('#close-help').onclick=document.querySelector('#explore').onclick=()=>helpDialog.close();
-document.querySelector('#light').onclick=()=>{sunset=!sunset;sun.color.set(sunset?'#ffc391':'#fff0d7');sun.intensity=sunset?3.2:4.2;sun.position.set(sunset?-25:-14,sunset?12:25,10);hemi.color.set(sunset?'#e6c8b9':'#fff5de');scene.background.set(sunset?'#e9dfd2':'#e8eee8');ground.material=material(sunset?'#e9dfd2':'#e8eee8');document.querySelector('#time').textContent=sunset?'18:42':'10:24';document.querySelector('.scene-info small').textContent=sunset?'La luce si fa gentile':'Una mattina di primavera'};
+document.querySelector('#light').onclick=()=>{sunset=!sunset;sun.color.set(sunset?'#ffc391':'#fff0d7');sun.intensity=sunset?3.2:4.2;sun.position.set(sunset?-25:-14,sunset?12:25,10);hemi.color.set(sunset?'#e6c8b9':'#fff5de');scene.background.set(sunset?'#e9dfd2':'#e8eee8');ground.material=material(sunset?'#e9dfd2':'#e8eee8');document.querySelector('#time').textContent=sunset?'18:42':'10:24';document.querySelector('.scene-info small').textContent=sunset?'The light turns golden':'A spring morning'};
 let audioCtx,audioGain,soundOn=false;
 document.querySelector('#sound').onclick=async()=>{
  if(!audioCtx){audioCtx=new AudioContext();audioGain=audioCtx.createGain();audioGain.gain.value=0;audioGain.connect(audioCtx.destination);const buffer=audioCtx.createBuffer(1,audioCtx.sampleRate*3,audioCtx.sampleRate),data=buffer.getChannelData(0);let v=0;for(let i=0;i<data.length;i++){v=(v+Math.random()*.02-.01)*.98;data[i]=v}const source=audioCtx.createBufferSource();source.buffer=buffer;source.loop=true;const filter=audioCtx.createBiquadFilter();filter.type='lowpass';filter.frequency.value=700;source.connect(filter).connect(audioGain);source.start()}
- await audioCtx.resume();soundOn=!soundOn;audioGain.gain.setTargetAtTime(soundOn?.35:0,audioCtx.currentTime,.4);document.querySelector('#sound span').textContent=soundOn?'Suono on':'Suono off';
+ await audioCtx.resume();soundOn=!soundOn;audioGain.gain.setTargetAtTime(soundOn?.35:0,audioCtx.currentTime,.4);document.querySelector('#sound span').textContent=soundOn?'Sound on':'Sound off';
 };
 const right=new THREE.Vector3(),forward=new THREE.Vector3(),clock=new THREE.Clock();let ready=false;
 function groundY(x,z){return insideBuilding(x,z)||x>-1.55&&x<.3&&z<3.7&&z>1.3?.56:.31}
@@ -282,7 +282,7 @@ function updateView(){
  people.filter(p=>!p.controlled&&p.g.position.y>3).forEach(p=>p.g.visible=viewFloor===1);
  const nearDoor=floor===0&&Math.hypot(player.g.position.x+.65,player.g.position.z-2)<2;
  entryLeft.position.x=nearDoor?-2.2:-1.23;entryRight.position.x=nearDoor?.9:-.07;
- document.querySelector('#current-floor').textContent=onStairs?'Sulla scala interna':floor===1?'Primo piano · Cura e conoscenza':inside?'Piano terra · Reception':'Il quartiere · Esterno';
+ document.querySelector('#current-floor').textContent=onStairs?'On the indoor stairs':floor===1?'First floor · Care and knowledge':inside?'Ground floor · Reception':'The neighborhood · Outdoors';
  for(const {b,anchor,type,id} of markerElements){
   const show=viewFloor===1;
   b.hidden=!show;if(!show)continue;
@@ -308,7 +308,7 @@ function animate(){
    }else{
     delta.normalize();const stride=Math.min(speed*dt,length),proposed=player.g.position.clone().addScaledVector(delta,stride);
     if(next.stair||!blocked(proposed.x,proposed.z)){player.g.position.copy(proposed);moving=true;distance+=stride;player.g.rotation.y=Math.atan2(delta.x,delta.z)}
-    else{cancelRoute();onStairs=false;toast('Il passaggio è occupato. Scegli un altro punto.');}
+    else{cancelRoute();onStairs=false;toast('The way is blocked. Choose another spot.');}
    }
   }else if(direction.lengthSq()){
    direction.normalize();const stride=speed*dt,nx=player.g.position.x+direction.x*stride,nz=player.g.position.z+direction.z*stride;
@@ -319,7 +319,7 @@ function animate(){
   }
  }
  if(!route.length)destination.visible=false;
- document.querySelector('#activity').textContent=onStairs?(floor===0?'Salendo al primo piano':'Scendendo alla reception'):moving?'In esplorazione · '+Math.floor(distance)+' m':'Pronto a scoprire';
+ document.querySelector('#activity').textContent=onStairs?(floor===0?'Heading upstairs':'Heading downstairs'):moving?'Exploring · '+Math.floor(distance)+' m':'Ready to discover';
  player.moving=moving;player.g.userData.marker.position.y=1.85+Math.sin(elapsed*2)*.07;
  for(const p of people){
   if(p.path.length){const t=p.path[p.target],x=t[0]-p.g.position.x,z=t[1]-p.g.position.z,len=Math.hypot(x,z);if(len<.12)p.target=(p.target+1)%p.path.length;else{p.g.position.x+=x/len*p.speed*dt;p.g.position.z+=z/len*p.speed*dt;p.g.rotation.y=Math.atan2(x,z)}p.moving=true}
@@ -327,7 +327,7 @@ function animate(){
   p.limbs.forEach((limb,i)=>limb.rotation.x=walk*(i===0||i===3?1:-1));p.body.position.y=p.moving?Math.abs(Math.sin(elapsed*8+p.phase))*.025:Math.sin(elapsed*1.6+p.phase)*.009;
  }
  updateView();renderer.render(scene,camera);
- if(!ready){ready=true;document.querySelector('#loading').style.opacity='0';setTimeout(()=>document.querySelector('#loading').remove(),800);setTimeout(()=>toast('Clicca dove vuoi andare, dentro, fuori o al piano superiore.'),1000);window.__BORGO_READY__=true;}
+ if(!ready){ready=true;document.querySelector('#loading').style.opacity='0';setTimeout(()=>document.querySelector('#loading').remove(),800);setTimeout(()=>toast('Click where you want to go: inside, outside or upstairs.'),1000);window.__BORGO_READY__=true;}
 }
 window.borgo={
  projectGround(x,z,y=.31){const p=new THREE.Vector3(x,y,z).project(camera);return{x:(p.x+1)*innerWidth/2,y:(1-p.y)*innerHeight/2}},

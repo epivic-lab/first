@@ -42,9 +42,9 @@ export function makeJourney(start,level,goal,targetLevel,outdoorObstacles=[]) {
   return [...before,...steps,...after];
 }
 export const exhibits=[
- {id:'pc',number:'01',title:'Il PC connesso',category:'SISTEMI DIGITALI',subtitle:'Dove le informazioni diventano cura.',icon:'computer',anchor:{x:.6,y:5.55,z:-3.65},goal:{x:-.25,z:-2.25},floor:1},
- {id:'bed',number:'02',title:'Il letto intelligente',category:'AMBIENTI DI CURA',subtitle:'La tecnologia, vicino alle persone.',icon:'bed',anchor:{x:-5.5,y:5.25,z:-3.5},goal:{x:-4.3,z:-3.25},floor:1},
- {id:'library',number:'03',title:'La libreria delle risorse',category:'CONOSCENZA CONDIVISA',subtitle:'Ogni risorsa al posto giusto.',icon:'library',anchor:{x:2,y:6.05,z:-5.6},goal:{x:1.65,z:-4.65},floor:1}
+ {id:'pc',number:'01',title:'The connected PC',category:'DIGITAL SYSTEMS',subtitle:'Where information becomes care.',icon:'computer',anchor:{x:.6,y:5.55,z:-3.65},goal:{x:-.25,z:-2.25},floor:1},
+ {id:'bed',number:'02',title:'The smart bed',category:'CARE ENVIRONMENTS',subtitle:'Technology, closer to people.',icon:'bed',anchor:{x:-5.5,y:5.25,z:-3.5},goal:{x:-4.3,z:-3.25},floor:1},
+ {id:'library',number:'03',title:'The resource library',category:'SHARED KNOWLEDGE',subtitle:'Every resource in the right place.',icon:'library',anchor:{x:2,y:6.05,z:-5.6},goal:{x:1.65,z:-4.65},floor:1}
 ];
 // Retarget a journey from any point on the staircase without a teleport or
 // finishing an unwanted trip to the opposite landing first.
