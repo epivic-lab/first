@@ -20,7 +20,7 @@ test('3D world, movement, collisions and controls', async ({page})=>{
   await page.locator('#reset').click();
   await page.locator('#light').click();await expect(page.locator('#time')).toHaveText('18:42');
   await page.locator('#light').click();
-  await page.locator('#help').click();await expect(page.locator('dialog')).toBeVisible();await page.locator('#explore').click();
+  await page.locator('#help').click();await expect(page.locator('#instructions')).toBeVisible();await page.locator('#explore').click();
   await page.screenshot({path:'/tmp/borgo-desktop.png'});
   expect(errors).toEqual([]);
 });

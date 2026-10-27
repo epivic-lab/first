@@ -36,3 +36,11 @@ Il workflow `.github/workflows/pages.yml` compila e pubblica automaticamente a o
 3. Attendere il completamento di **Actions → Publish Borgo to GitHub Pages**. L'indirizzo effettivo compare nel deployment `github-pages`.
 
 La configurazione `base: './'` supporta anche la pubblicazione sotto il percorso del repository, senza un dominio personalizzato. La cartella statica finale è `dist/`.
+
+## Esplorazione degli ambienti
+
+La clinica comprende piano terra e primo piano. Il punto all’ingresso e il pannello dei piani avviano un percorso reale attraverso la porta e la scala interna. Quando si entra, la vista in sezione nasconde il piano superiore per rendere leggibile la reception. Il personaggio sale e scende i gradini senza teletrasporto.
+
+I punti numerati su PC, letto e libreria sono selezionabili anche dall’esterno. Il personaggio raggiunge prima la posizione di visita al primo piano; soltanto all’arrivo si apre la scheda a tutto schermo. Le schede contengono per ora testo Lorem ipsum e illustrazioni dedicate. Si chiudono con X, Esc oppure “Torna a esplorare”. Il contatore di scoperta è mantenuto durante la sessione.
+
+I dati degli oggetti, le posizioni di avvicinamento, le collisioni dei piani e i collegamenti della scala sono in `src/exploration.js`. I testi del pannello sono in `index.html`; le illustrazioni sono SVG locali generati da `exhibitArtwork` in `src/main.js`. Non sono richieste credenziali o servizi aggiuntivi.

@@ -1,0 +1,57 @@
+import {test,expect} from '@playwright/test';
+test('enters reception, walks up stairs, opens all exhibits on arrival and returns outside',async({page})=>{
+ test.setTimeout(240000);
+ const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('http://127.0.0.1:5173');await page.waitForFunction(()=>window.borgo?.ready);
+ await page.locator('[data-point="entrance"]').click();
+ await page.keyboard.down('Shift');
+ await expect.poll(()=>page.evaluate(()=>borgo.viewFloor),{timeout:30000}).toBe(0);
+ await expect.poll(()=>page.evaluate(()=>borgo.destination),{timeout:20000}).toBeNull();
+ await expect(page.locator('[data-point="stairs-up"]')).toBeVisible();
+ await page.screenshot({path:'/tmp/borgo-reception.png'});
+ await page.locator('[data-point="stairs-up"]').click();await page.keyboard.down('Shift');
+ await expect.poll(()=>page.evaluate(()=>borgo.onStairs),{timeout:25000}).toBe(true);
+ const intermediate=await page.evaluate(()=>borgo.player);
+ expect(intermediate.y).toBeGreaterThan(.5);expect(intermediate.y).toBeLessThan(3.96);
+ await expect.poll(()=>page.evaluate(()=>borgo.player.floor),{timeout:25000}).toBe(1);
+ await expect.poll(()=>page.evaluate(()=>borgo.destination),{timeout:15000}).toBeNull();
+ await page.keyboard.up('Shift');
+ await page.screenshot({path:'/tmp/borgo-upper.png'});
+ for(const [id,title] of [['pc','Il PC connesso'],['bed','Il letto intelligente'],['library','La libreria delle risorse']]){
+  await page.locator(`[data-point="${id}"]`).click();
+  await expect(page.locator('#exhibit-dialog')).not.toBeVisible();
+  await page.keyboard.down('Shift');
+  await expect(page.locator('#exhibit-dialog')).toBeVisible({timeout:35000});
+  await expect(page.locator('#exhibit-title')).toHaveText(title);
+  await expect(page.locator('#exhibit-dialog')).toContainText('Lorem ipsum');
+  expect(await page.evaluate(()=>borgo.player.floor)).toBe(1);
+  const modal=await page.locator('#exhibit-dialog').boundingBox();expect(modal.width).toBe(1440);expect(modal.height).toBe(1000);
+  if(id==='pc')await page.screenshot({path:'/tmp/borgo-exhibit.png'});
+  await page.keyboard.up('Shift');
+  if(id==='bed')await page.keyboard.press('Escape');else await page.locator('#close-exhibit').click();
+  await expect(page.locator('#exhibit-dialog')).not.toBeVisible();
+ }
+ await expect(page.locator('#discovery-count')).toHaveText('3 / 3');
+ await page.locator('[data-floor="0"]').click();await page.keyboard.down('Shift');
+ await expect.poll(()=>page.evaluate(()=>borgo.player.floor),{timeout:35000}).toBe(0);
+ await expect.poll(()=>page.evaluate(()=>borgo.destination),{timeout:20000}).toBeNull();
+ const target=await page.evaluate(()=>borgo.projectGround(-.65,4.3,.51));
+ await page.mouse.click(target.x,target.y);await page.keyboard.down('Shift');
+ await expect.poll(()=>page.evaluate(()=>borgo.player.z),{timeout:20000}).toBeGreaterThan(3.8);
+ await page.keyboard.up('Shift');expect(errors).toEqual([]);
+});
+test('mobile exhibit selection from outside climbs before opening the full-screen sheet',async({page})=>{
+ test.setTimeout(120000);
+ await page.setViewportSize({width:390,height:844});
+ await page.goto('http://127.0.0.1:5173');await page.waitForFunction(()=>window.borgo?.ready);
+ await page.locator('[data-point="pc"]').click();
+ await expect(page.locator('#exhibit-dialog')).not.toBeVisible();
+ await page.keyboard.down('Shift');
+ await expect.poll(()=>page.evaluate(()=>borgo.onStairs),{timeout:45000}).toBe(true);
+ await expect(page.locator('#exhibit-dialog')).toBeVisible({timeout:45000});
+ expect(await page.evaluate(()=>borgo.player.floor)).toBe(1);
+ const bounds=await page.locator('#exhibit-dialog').boundingBox();expect(bounds.width).toBe(390);expect(bounds.height).toBe(844);
+ await page.screenshot({path:'/tmp/borgo-mobile-exhibit.png'});
+ await page.locator('#close-exhibit').click();await expect(page.locator('#exhibit-dialog')).not.toBeVisible();
+ await page.keyboard.up('Shift');
+});
