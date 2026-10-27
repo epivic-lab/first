@@ -6,12 +6,16 @@ test('3D world, movement, collisions and controls', async ({page})=>{
   await expect(page.locator('#loading')).toHaveCount(0);
   expect(await page.evaluate(()=>borgo.inhabitants)).toBe(10);
   const before=await page.evaluate(()=>borgo.player);
-  await page.keyboard.down('ArrowRight');await page.waitForTimeout(900);await page.keyboard.up('ArrowRight');
+  await page.keyboard.down('ArrowRight');
+  await expect.poll(async()=>{const p=await page.evaluate(()=>borgo.player);return Math.hypot(p.x-before.x,p.z-before.z)},{timeout:15000}).toBeGreaterThan(.4);
+  await page.keyboard.up('ArrowRight');
   const after=await page.evaluate(()=>borgo.player);
   expect(Math.hypot(after.x-before.x,after.z-before.z)).toBeGreaterThan(.3);
   await page.locator('#reset').click();
   expect(await page.evaluate(()=>borgo.player.x)).toBe(-4);
-  await page.keyboard.down('ArrowUp');await page.waitForTimeout(3000);await page.keyboard.up('ArrowUp');
+  await page.keyboard.down('ArrowUp');
+  await expect.poll(()=>page.evaluate(()=>borgo.player.z),{timeout:15000}).toBeLessThan(2.45);
+  await page.waitForTimeout(250);await page.keyboard.up('ArrowUp');
   expect(await page.evaluate(()=>borgo.player.z)).toBeGreaterThan(2.2);
   await page.locator('#reset').click();
   await page.locator('#light').click();await expect(page.locator('#time')).toHaveText('18:42');
