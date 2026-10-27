@@ -1,4 +1,4 @@
-import { FLOOR_HEIGHTS, STAIR_BOTTOM, STAIR_TOP, insideBuilding, blockedGround, blockedUpper, makeJourney, exhibits } from './exploration.js';
+import { FLOOR_HEIGHTS, STAIR_BOTTOM, STAIR_TOP, insideBuilding, blockedGround, blockedUpper, makeJourney, makeStairJourney, exhibits } from './exploration.js';
 import '@fontsource/dm-sans/latin-400.css';
 import '@fontsource/dm-sans/latin-500.css';
 import '@fontsource/dm-sans/latin-600.css';
@@ -32,7 +32,7 @@ function label(text,width,color='#536a5b',bg=null){const c=document.createElemen
 // Floating landscaped block, with a beveled edge rather than an infinite ground.
 const ground=box(200,.1,200,'#e8eee8',0,-.8,0);ground.castShadow=false;
 box(25,.6,21,palette.edge,0,-.28,0);
-box(24.8,.15,20.8,palette.path,0,.095,0);
+box(24.8,.15,20.8,palette.path,0,.095,0).userData.walkFloor=0;
 box(24.3,.07,3.4,palette.road,0,.19,6.9);
 box(24.3,.07,1.3,palette.road,0,.19,-8.9);
 for(let x=-11;x<12;x+=2.5)box(1,.015,.065,'#dedecb',x,.24,6.9);
@@ -55,7 +55,7 @@ box(3.85,3.15,.18,palette.wall,2.36,2,1.92);
 box(2.2,.65,.18,palette.wall,-.65,3.25,1.92);
 collect(startFacade,facadeMeshes);
 // Reception: open circulation from entrance to the staircase.
-box(11.65,.08,7.65,'#e4dfcc',-1.7,.5,-2.1,groundInterior);
+box(11.65,.08,7.65,'#e4dfcc',-1.7,.5,-2.1,groundInterior).userData.walkFloor=0;
 box(2.7,1.02,1.1,'#ddd5be',-3.8,1.03,-2.8,groundInterior);
 box(2.85,.12,1.25,palette.white,-3.8,1.6,-2.8,groundInterior);
 box(.58,.4,.07,'#527b7e',-3.6,1.85,-2.8,groundInterior);
@@ -77,7 +77,7 @@ box(1.37,.58,.03,'#a8bbaa',-5.2,2.15,-5.97,groundInterior);
 let startUpper=scene.children.length;
 // Split the slabs to leave a real opening for the staircase.
 for(const [x,z,w,d] of [[-2.8,-2.1,10.25,8.5],[4.2,-2.1,.65,8.5],[3.05,-4.15,1.45,4.4],[3.05,1.6,1.45,1.1]]){
- box(w,.19,d,palette.white,x,3.66,z);box(w,.16,d,'#e8e3d2',x,3.84,z);
+ box(w,.19,d,palette.white,x,3.66,z);box(w,.16,d,'#e8e3d2',x,3.84,z).userData.walkFloor=1;
 }
 // Rear and left walls on the upper floor, leaving a dollhouse view.
 box(12,2.55,.18,palette.wall,-1.7,5.15,-6.12);
@@ -106,6 +106,7 @@ box(.32,1.1,.09,palette.white,-3.05,4.6,2.42);box(1.05,.32,.09,palette.white,-3.
 const hospitalName=label('CLINICA BORGO',1.8,'#fff9ec');hospitalName.position.set(-3.05,3.64,2.424);scene.add(hospitalName);
 const entryLeft=box(1.1,2.25,.06,'#779ca3',-1.23,1.58,2.02);
 const entryRight=box(1.1,2.25,.06,'#779ca3',-.07,1.58,2.02);
+entryLeft.userData.door=true;entryRight.userData.door=true;
 box(.065,2.3,.1,palette.white,-.65,1.58,2.1);
 box(2.65,.11,1.8,palette.white,-.65,.49,2.8);
 box(3.05,.22,2.05,palette.purple,-.65,3.22,2.85);box(2.75,.08,1.83,palette.white,-.65,3.36,2.85);
@@ -185,7 +186,7 @@ function cancelRoute(){route=[];pendingExhibit=null;destination.visible=false;}
 const valid=['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','w','a','s','d','Shift'];
 window.addEventListener('keydown',e=>{
  if(valid.includes(e.key)&&!paused()){
-  e.preventDefault();if(onStairs)return;
+  e.preventDefault();if(onStairs&&e.key!=='Shift')return;
   if(e.key!=='Shift')cancelRoute();keys.add(e.key);
  }
 });
@@ -198,8 +199,7 @@ let toastTimer;
 function toast(text){const el=document.querySelector('#toast');el.textContent=text;el.classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('visible'),4500)}
 function travel(goal,targetFloor,exhibit=null){
  if(paused())return;
- if(onStairs){toast('Un momento: stai percorrendo la scala.');return;}
- const path=makeJourney(player.g.position,floor,goal,targetFloor,obstacles);
+ const path=onStairs?makeStairJourney(player.g.position,targetFloor,goal,obstacles):makeJourney(player.g.position,floor,goal,targetFloor,obstacles);
  if(!path){toast('Quel punto non è raggiungibile. Scegli un punto libero.');return;}
  keys.clear();route=path;pendingExhibit=exhibit;
  destination.position.set(goal.x,targetFloor===1?3.98:(insideBuilding(goal.x,goal.z)?.56:.32),goal.z);destination.visible=true;
@@ -213,10 +213,6 @@ function marker({id,title,number,anchor,onClick,type='exhibit'}){
  b.onclick=onClick;document.querySelector('#world-markers').append(b);markerElements.push({b,anchor,type,id});return b;
 }
 for(const item of exhibits)marker({id:item.id,title:item.title,number:item.number,anchor:item.anchor,onClick:()=>travel(item.goal,item.floor,item)});
-marker({id:'entrance',title:'Entra nella clinica',number:'→',anchor:{x:-.65,y:2.7,z:3.1},type:'entrance',onClick:()=>travel({x:-.65,z:.7},0)});
-marker({id:'stairs-up',title:'Sali al primo piano',number:'↑',anchor:{x:3.05,y:1.7,z:.9},type:'stairs-up',onClick:()=>travel({x:1.55,z:-1.35},1)});
-marker({id:'stairs-down',title:'Scala interna',number:'↓',anchor:{x:3.05,y:4.7,z:-1.9},type:'stairs-down',onClick:()=>travel(floor===1?{x:-.65,z:.7}:{x:1.55,z:-1.35},floor===1?0:1)});
-for(const b of document.querySelectorAll('[data-floor]'))b.onclick=()=>travel(b.dataset.floor==='1'?{x:1.55,z:-1.35}:{x:-.65,z:.7},Number(b.dataset.floor));
 const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();let pointerStart=null;
 canvas.style.cursor='crosshair';
 canvas.addEventListener('pointerdown',e=>{if(e.button===0)pointerStart={x:e.clientX,y:e.clientY}});
@@ -228,13 +224,23 @@ canvas.addEventListener('pointerup',e=>{
  const hits=raycaster.intersectObjects(scene.children,true).filter(h=>{let o=h.object;while(o){if(!o.visible)return false;o=o.parent;}return h.object!==destination;});
  const exhibitHit=hits[0]?.object.userData.exhibit;
  if(exhibitHit){const item=exhibits.find(x=>x.id===exhibitHit);travel(item.goal,1,item);return;}
- if(hits[0]&&hits[0].object.parent===stairGroup){travel(floor===0?{x:1.55,z:-1.35}:{x:-.65,z:.7},floor===0?1:0);return;}
- const target=new THREE.Vector3(),height=floor===1?3.96:(viewFloor===0?.51:.31);
+ if(hits[0]?.object.userData.door){travel({x:-.65,z:.7},0);return;}
+ if(hits[0]&&hits[0].object.parent===stairGroup){
+  // Clicking the visible staircase follows it naturally to the other landing.
+  travel(floor===0?{x:1.55,z:-1.35}:{x:3.05,z:1.15},floor===0?1:0);return;
+ }
+ // Pick the visible walkable surface, not the plane of the player's current
+ // floor. A pavement click from upstairs therefore means "walk outside".
+ const surface=hits.find(h=>h.object.userData.walkFloor!==undefined&&h.face?.normal.y>.5);
+ if(!surface){toast('Scegli un punto libero sul pavimento o sul vialetto.');return;}
+ const targetFloor=surface.object.userData.walkFloor;
+ const interior=surface.object.parent===groundInterior;
+ const height=targetFloor===1?3.96:interior?.56:.31;
+ const target=new THREE.Vector3();
  if(!raycaster.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0),-height),target))return;
- // Upper-floor objects can be selected from outside via their numbered markers.
- if(blocked(target.x,target.z)){toast('Scegli un punto libero oppure uno dei punti numerati.');return;}
- if(hits[0]&&hits[0].point.y>height+.7){toast('Clicca su un vialetto o su un punto di esplorazione.');return;}
- travel({x:target.x,z:target.z},floor);
+ const isBlocked=targetFloor===1?blockedUpper(target.x,target.z):blockedGround(target.x,target.z,obstacles);
+ if(isBlocked){toast('Quel punto è occupato. Scegli un tratto libero del pavimento.');return;}
+ travel({x:target.x,z:target.z},targetFloor);
 });
 function openExhibit(item){
  cancelRoute();keys.clear();discovered.add(item.id);
@@ -277,9 +283,8 @@ function updateView(){
  const nearDoor=floor===0&&Math.hypot(player.g.position.x+.65,player.g.position.z-2)<2;
  entryLeft.position.x=nearDoor?-2.2:-1.23;entryRight.position.x=nearDoor?.9:-.07;
  document.querySelector('#current-floor').textContent=onStairs?'Sulla scala interna':floor===1?'Primo piano · Cura e conoscenza':inside?'Piano terra · Reception':'Il quartiere · Esterno';
- document.querySelectorAll('[data-floor]').forEach(b=>b.setAttribute('aria-current',String(Number(b.dataset.floor)===floor)));
  for(const {b,anchor,type,id} of markerElements){
-  const show=type==='exhibit'?viewFloor===1:type==='entrance'?!inside&&floor===0:type==='stairs-up'?viewFloor===0:viewFloor===1;
+  const show=viewFloor===1;
   b.hidden=!show;if(!show)continue;
   const p=new THREE.Vector3(anchor.x,anchor.y+Math.sin(elapsed*1.7)*.035,anchor.z).project(camera);
   b.style.left=(p.x+1)*innerWidth/2+'px';b.style.top=(1-p.y)*innerHeight/2+'px';
@@ -322,7 +327,7 @@ function animate(){
   p.limbs.forEach((limb,i)=>limb.rotation.x=walk*(i===0||i===3?1:-1));p.body.position.y=p.moving?Math.abs(Math.sin(elapsed*8+p.phase))*.025:Math.sin(elapsed*1.6+p.phase)*.009;
  }
  updateView();renderer.render(scene,camera);
- if(!ready){ready=true;document.querySelector('#loading').style.opacity='0';setTimeout(()=>document.querySelector('#loading').remove(),800);setTimeout(()=>toast('Entra nella clinica o scegli un punto numerato da scoprire.'),1000);window.__BORGO_READY__=true;}
+ if(!ready){ready=true;document.querySelector('#loading').style.opacity='0';setTimeout(()=>document.querySelector('#loading').remove(),800);setTimeout(()=>toast('Clicca dove vuoi andare, dentro, fuori o al piano superiore.'),1000);window.__BORGO_READY__=true;}
 }
 window.borgo={
  projectGround(x,z,y=.31){const p=new THREE.Vector3(x,y,z).project(camera);return{x:(p.x+1)*innerWidth/2,y:(1-p.y)*innerHeight/2}},

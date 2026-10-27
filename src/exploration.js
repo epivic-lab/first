@@ -46,3 +46,17 @@ export const exhibits=[
  {id:'bed',number:'02',title:'Il letto intelligente',category:'AMBIENTI DI CURA',subtitle:'La tecnologia, vicino alle persone.',icon:'bed',anchor:{x:-5.5,y:5.25,z:-3.5},goal:{x:-4.3,z:-3.25},floor:1},
  {id:'library',number:'03',title:'La libreria delle risorse',category:'CONOSCENZA CONDIVISA',subtitle:'Ogni risorsa al posto giusto.',icon:'library',anchor:{x:2,y:6.05,z:-5.6},goal:{x:1.65,z:-4.65},floor:1}
 ];
+// Retarget a journey from any point on the staircase without a teleport or
+// finishing an unwanted trip to the opposite landing first.
+export function makeStairJourney(start,targetLevel,goal,outdoorObstacles=[]) {
+  const landing=targetLevel===0?STAIR_BOTTOM:STAIR_TOP;
+  const after=makeJourney(landing,targetLevel,goal,targetLevel,outdoorObstacles);
+  if(!after)return null;
+  const from=Math.max(0,Math.min(1,(start.y-FLOOR_HEIGHTS[0])/(FLOOR_HEIGHTS[1]-FLOOR_HEIGHTS[0])));
+  const to=targetLevel,steps=[],count=Math.max(1,Math.ceil(Math.abs(to-from)*18));
+  for(let i=1;i<=count;i++){
+    const t=from+(to-from)*i/count;
+    steps.push({x:STAIR_BOTTOM.x,z:STAIR_BOTTOM.z+(STAIR_TOP.z-STAIR_BOTTOM.z)*t,y:FLOOR_HEIGHTS[0]+(FLOOR_HEIGHTS[1]-FLOOR_HEIGHTS[0])*t,stair:true,...(i===count?{floor:targetLevel}:{})});
+  }
+  return [...steps,...after];
+}

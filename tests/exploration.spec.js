@@ -3,20 +3,19 @@ test('enters reception, walks up stairs, opens all exhibits on arrival and retur
  test.setTimeout(240000);
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto('http://127.0.0.1:5173');await page.waitForFunction(()=>window.borgo?.ready);
- await page.locator('[data-point="entrance"]').click();
- await page.keyboard.down('Shift');
+ await expect(page.locator('[data-floor], [data-point="entrance"], [data-point="stairs-up"], [data-point="stairs-down"]')).toHaveCount(0);
+ const upper=await page.evaluate(()=>borgo.projectGround(-4.3,-.3,3.96));
+ await page.mouse.click(upper.x,upper.y);await page.keyboard.down('Shift');
+ await expect.poll(()=>page.evaluate(()=>borgo.destination?.floor),{timeout:5000}).toBe(1);
  await expect.poll(()=>page.evaluate(()=>borgo.viewFloor),{timeout:30000}).toBe(0);
- await expect.poll(()=>page.evaluate(()=>borgo.destination),{timeout:20000}).toBeNull();
- await expect(page.locator('[data-point="stairs-up"]')).toBeVisible();
- await page.screenshot({path:'/tmp/borgo-reception.png'});
- await page.locator('[data-point="stairs-up"]').click();await page.keyboard.down('Shift');
  await expect.poll(()=>page.evaluate(()=>borgo.onStairs),{timeout:25000}).toBe(true);
  const intermediate=await page.evaluate(()=>borgo.player);
  expect(intermediate.y).toBeGreaterThan(.5);expect(intermediate.y).toBeLessThan(3.96);
  await expect.poll(()=>page.evaluate(()=>borgo.player.floor),{timeout:25000}).toBe(1);
- await expect.poll(()=>page.evaluate(()=>borgo.destination),{timeout:15000}).toBeNull();
+ await expect.poll(()=>page.evaluate(()=>borgo.destination),{timeout:25000}).toBeNull();
+ expect(await page.evaluate(()=>Math.hypot(borgo.player.x+4.3,borgo.player.z+.3))).toBeLessThan(.1);
+ await expect(page.locator('#exhibit-dialog')).not.toBeVisible();
  await page.keyboard.up('Shift');
- await page.screenshot({path:'/tmp/borgo-upper.png'});
  for(const [id,title] of [['pc','Il PC connesso'],['bed','Il letto intelligente'],['library','La libreria delle risorse']]){
   await page.locator(`[data-point="${id}"]`).click();
   await expect(page.locator('#exhibit-dialog')).not.toBeVisible();
@@ -32,12 +31,12 @@ test('enters reception, walks up stairs, opens all exhibits on arrival and retur
   await expect(page.locator('#exhibit-dialog')).not.toBeVisible();
  }
  await expect(page.locator('#discovery-count')).toHaveText('3 / 3');
- await page.locator('[data-floor="0"]').click();await page.keyboard.down('Shift');
+ const outside=await page.evaluate(()=>borgo.projectGround(-6,9.2));
+ await page.mouse.click(outside.x,outside.y);await page.keyboard.down('Shift');
+ await expect.poll(()=>page.evaluate(()=>borgo.destination?.floor),{timeout:5000}).toBe(0);
  await expect.poll(()=>page.evaluate(()=>borgo.player.floor),{timeout:35000}).toBe(0);
- await expect.poll(()=>page.evaluate(()=>borgo.destination),{timeout:20000}).toBeNull();
- const target=await page.evaluate(()=>borgo.projectGround(-.65,4.3,.51));
- await page.mouse.click(target.x,target.y);await page.keyboard.down('Shift');
- await expect.poll(()=>page.evaluate(()=>borgo.player.z),{timeout:20000}).toBeGreaterThan(3.8);
+ await expect.poll(()=>page.evaluate(()=>borgo.destination),{timeout:30000}).toBeNull();
+ expect(await page.evaluate(()=>Math.hypot(borgo.player.x+6,borgo.player.z-9.2))).toBeLessThan(.1);
  await page.keyboard.up('Shift');expect(errors).toEqual([]);
 });
 test('mobile exhibit selection from outside climbs before opening the full-screen sheet',async({page})=>{
@@ -53,5 +52,22 @@ test('mobile exhibit selection from outside climbs before opening the full-scree
  const bounds=await page.locator('#exhibit-dialog').boundingBox();expect(bounds.width).toBe(390);expect(bounds.height).toBe(844);
  await page.screenshot({path:'/tmp/borgo-mobile-exhibit.png'});
  await page.locator('#close-exhibit').click();await expect(page.locator('#exhibit-dialog')).not.toBeVisible();
+ await page.keyboard.up('Shift');
+});
+test('a new pavement click reverses an in-progress climb and exits',async({page})=>{
+ test.setTimeout(120000);
+ await page.goto('http://127.0.0.1:5173');await page.waitForFunction(()=>window.borgo?.ready);
+ const upper=await page.evaluate(()=>borgo.projectGround(-4.3,-.3,3.96));
+ await page.mouse.click(upper.x,upper.y);await page.keyboard.down('Shift');
+ await expect.poll(()=>page.evaluate(()=>borgo.onStairs&&borgo.player.y>1.2&&borgo.player.y<3),{timeout:40000}).toBe(true);
+ const before=await page.evaluate(()=>borgo.player.y);
+ const outside=await page.evaluate(()=>borgo.projectGround(-6,9.2));
+ await page.mouse.click(outside.x,outside.y);
+ await expect.poll(()=>page.evaluate(()=>borgo.destination?.floor)).toBe(0);
+ expect(await page.evaluate(()=>borgo.player.y)).toBeLessThan(before+.5);
+ await page.keyboard.down('Shift');
+ await expect.poll(()=>page.evaluate(()=>borgo.destination),{timeout:60000}).toBeNull();
+ expect(await page.evaluate(()=>borgo.player.floor)).toBe(0);
+ expect(await page.evaluate(()=>Math.hypot(borgo.player.x+6,borgo.player.z-9.2))).toBeLessThan(.1);
  await page.keyboard.up('Shift');
 });

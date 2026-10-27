@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {makeJourney,blockedGround,blockedUpper,exhibits} from '../src/exploration.js';
+import {makeJourney,makeStairJourney,blockedGround,blockedUpper,exhibits} from '../src/exploration.js';
 test('all three exhibits are reachable via the entrance and continuous stairs',()=>{
  for(const exhibit of exhibits){
   const path=makeJourney({x:-4,z:4.3},0,exhibit.goal,1);
@@ -20,5 +20,17 @@ test('building can only be entered through the doorway and upstairs stays bounde
 test('upper-floor exhibits connect without revisiting the stairs',()=>{
  for(const a of exhibits)for(const b of exhibits){
   const route=makeJourney(a.goal,1,b.goal,1);assert.ok(route);assert.equal(route.some(p=>p.stair),false);
+ }
+});
+
+test('can reverse on the stairs or continue to an upstairs destination',()=>{
+ const start={x:3.05,y:2.235,z:-.55};
+ for(const targetFloor of [0,1]){
+  const goal=targetFloor===0?{x:-6,z:9.2}:{x:-4.3,z:-.3};
+  const path=makeStairJourney(start,targetFloor,goal);assert.ok(path);
+  const steps=path.filter(p=>p.stair);
+  assert.ok(Math.abs(steps[0].y-start.y)<.25);
+  for(let i=1;i<steps.length;i++)assert.ok(targetFloor===0?steps[i].y<steps[i-1].y:steps[i].y>steps[i-1].y);
+  assert.equal(steps.at(-1).floor,targetFloor);assert.deepEqual(path.at(-1),{...goal,floor:targetFloor});
  }
 });

@@ -39,7 +39,7 @@ La configurazione `base: './'` supporta anche la pubblicazione sotto il percorso
 
 ## Esplorazione degli ambienti
 
-La clinica comprende piano terra e primo piano. Il punto all’ingresso e il pannello dei piani avviano un percorso reale attraverso la porta e la scala interna. Quando si entra, la vista in sezione nasconde il piano superiore per rendere leggibile la reception. Il personaggio sale e scende i gradini senza teletrasporto.
+La clinica comprende piano terra e primo piano. La destinazione si sceglie direttamente nella scena: un clic sul pavimento del primo piano avvia il tragitto attraverso ingresso e scala; un clic su un vialetto esterno fa scendere e uscire il personaggio. Non ci sono pulsanti per entrare, salire o selezionare i piani. Anche sulla scala un nuovo clic può cambiare direzione senza teletrasporti. Quando si entra, la vista in sezione nasconde il piano superiore per rendere leggibile la reception. Il personaggio sale e scende i gradini senza teletrasporto.
 
 I punti numerati su PC, letto e libreria sono selezionabili anche dall’esterno. Il personaggio raggiunge prima la posizione di visita al primo piano; soltanto all’arrivo si apre la scheda a tutto schermo. Le schede contengono per ora testo Lorem ipsum e illustrazioni dedicate. Si chiudono con X, Esc oppure “Torna a esplorare”. Il contatore di scoperta è mantenuto durante la sessione.
 
